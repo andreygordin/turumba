@@ -1,0 +1,61 @@
+version: "3.8"
+services:
+  gateway:
+    image: ${REGISTRY}/gateway:${IMAGE_TAG}
+    restart: always
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    ports:
+      - "8083:80"
+      - "8084:443"
+    depends_on:
+      - frontend
+      - api
+  frontend:
+    image: ${REGISTRY}/frontend:${IMAGE_TAG}
+    restart: always
+  api:
+    image: ${REGISTRY}/api:${IMAGE_TAG}
+    restart: always
+    volumes:
+      - ../upload:/app/var/upload
+    depends_on:
+      - api-php-fpm
+  api-php-fpm:
+    image: ${REGISTRY}/api-php-fpm:${IMAGE_TAG}
+    restart: always
+    volumes:
+      - ../upload:/app/var/upload
+    environment:
+      APP_DEBUG: 0
+      APP_ENV: prod
+      DB_HOST: api-postgres
+      DB_USER: app
+      DB_PASSWORD: ${API_DB_PASSWORD}
+      DB_NAME: app
+      UPLOAD_URL: https://upload.turumba.ru
+  api-php-cli:
+    image: ${REGISTRY}/api-php-cli:${IMAGE_TAG}
+    volumes:
+      - ../upload:/app/var/upload
+    environment:
+      APP_DEBUG: 0
+      APP_ENV: prod
+      DB_HOST: api-postgres
+      DB_USER: app
+      DB_PASSWORD: ${API_DB_PASSWORD}
+      DB_NAME: app
+      UPLOAD_URL: https://upload.turumba.ru
+  api-postgres:
+    image: postgres:12.2-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${API_DB_PASSWORD}
+      POSTGRES_DB: app
+    volumes:
+      - api-postgres:/var/lib/postgresql/data
+    ports:
+      - "54322:5432"
+volumes:
+  api-postgres:

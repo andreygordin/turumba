@@ -1,0 +1,62 @@
+version: "3.8"
+services:
+  gateway:
+    build:
+      context: gateway/docker/dev/nginx
+    ports:
+      - "12981:12981"
+      - "12982:12982"
+      - "12983:12983"
+    depends_on:
+      - frontend
+      - api
+  frontend:
+    build:
+      context: frontend/docker/dev/nginx
+    volumes:
+      - ./frontend:/app
+  api:
+    build:
+      context: api/docker/dev/nginx
+    volumes:
+      - ./api:/app
+    depends_on:
+      - api-php-fpm
+  api-php-fpm:
+    build:
+      context: api/docker/dev/php-fpm
+    environment:
+      APP_DEBUG: 1
+      APP_ENV: dev
+      DB_HOST: api-postgres
+      DB_USER: app
+      DB_PASSWORD: secret
+      DB_NAME: app
+      UPLOAD_URL: http://localhost:12983
+    volumes:
+      - ./api:/app
+  api-php-cli:
+    build:
+      context: api/docker/dev/php-cli
+    environment:
+      APP_DEBUG: 1
+      APP_ENV: dev
+      DB_HOST: api-postgres
+      DB_USER: app
+      DB_PASSWORD: secret
+      DB_NAME: app
+      UPLOAD_URL: http://localhost:12983
+    volumes:
+      - ./api:/app
+  api-postgres:
+    image: postgres:12.2-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: app
+    volumes:
+      - api-postgres:/var/lib/postgresql/data
+    ports:
+      - "54321:5432"
+volumes:
+  api-postgres:
